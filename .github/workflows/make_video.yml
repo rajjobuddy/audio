@@ -1,0 +1,26 @@
+name: Generate Chill Music Video
+
+on:
+  workflow_dispatch:  # You can also schedule it using 'schedule'
+
+jobs:
+  build-video:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v3
+
+      - name: ⚙️ Set up FFmpeg
+        run: |
+          sudo apt update
+          sudo apt install -y ffmpeg
+
+      - name: 🛠️ Run Bash video script
+        run: bash scripts/make_video.sh
+
+      - name: 📦 Upload final video as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: final-relaxing-video
+          path: "*.mp4"
