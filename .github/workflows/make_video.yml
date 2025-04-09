@@ -8,6 +8,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Install dependencies
+        run: pip install google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
+
       - name: ⬇️ Checkout code
         uses: actions/checkout@v3
 
