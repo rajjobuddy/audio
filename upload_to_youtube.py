@@ -17,7 +17,7 @@ def main():
     )
 
     # Start local server for authentication
-    credentials = flow.run_local_server(port=0)
+    credentials = flow.run_console()
 
     # Build the YouTube service
     youtube = googleapiclient.discovery.build("youtube", "v3", credentials=credentials)
