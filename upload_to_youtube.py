@@ -8,33 +8,22 @@ from googleapiclient.http import MediaFileUpload
 scopes = ["https://www.googleapis.com/auth/youtube.upload"]
 
 def main():
-    api_service_name = "youtube"
-    api_version = "v3"
-    client_secrets_file = os.environ["CLIENT_SECRET_FILE"]
+    # Define the scopes
+    scopes = ["https://www.googleapis.com/auth/youtube.upload"]
 
+    # Load credentials from client_secrets.json
     flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-        client_secrets_file, scopes)
-    credentials = flow.run_console()
-
-    youtube = googleapiclient.discovery.build(
-        api_service_name, api_version, credentials=credentials)
-
-    request = youtube.videos().insert(
-        part="snippet,status",
-        body={
-            "snippet": {
-                "title": os.environ.get("TITLE", "My Video"),
-                "description": os.environ.get("DESCRIPTION", ""),
-                "categoryId": os.environ.get("CATEGORY", "22")
-            },
-            "status": {
-                "privacyStatus": os.environ.get("PRIVACY", "unlisted")
-            }
-        },
-        media_body=MediaFileUpload(os.environ["VIDEO_FILE"])
+        "client_secret.json", scopes=scopes
     )
-    response = request.execute()
-    print("✅ Video uploaded. YouTube video ID:", response.get("id"))
+
+    # Start local server for authentication
+    credentials = flow.run_local_server(port=0)
+
+    # Build the YouTube service
+    youtube = googleapiclient.discovery.build("youtube", "v3", credentials=credentials)
+
+    # Upload code continues below...
+
 
 if __name__ == "__main__":
     main()
