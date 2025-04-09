@@ -24,7 +24,7 @@ jobs:
     - name: Run video generation script
       run: |
         chmod +x make_video.sh
-        ./make_video.sh
+        bash scripts/make_video.sh
 
     - name: Upload to YouTube
       run: |
