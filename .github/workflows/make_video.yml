@@ -1,4 +1,4 @@
-name: Generate Chill Music Video
+name: Generate Relax Music Beads
 
 on:
   workflow_dispatch:  # You can also schedule it using 'schedule'
