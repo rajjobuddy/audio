@@ -4,7 +4,7 @@ DATE=$(date +"%d%m%y")
 IMAGE="assets/image.jpg"
 AUDIO="assets/music.mp3"
 OUTPUT="${DATE}video10.mp4"
-DURATION=3600
+DURATION=1800
 
 if [ ! -f "$IMAGE" ]; then
   echo "❌ Image file not found: $IMAGE"
@@ -26,8 +26,11 @@ ffmpeg -y -stream_loop 1000 -i "$AUDIO" -t $DURATION \
   -c:a aac -b:a 192k temp_audio.aac
 
 echo "🖊️ Merging with text overlay..."
-ffmpeg -y -i temp_video.mp4 -i temp_audio.aac -filter_complex "[0:v]drawtext=text='Relax | Calm | Sleep':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h-text_h)/2" \
+#ffmpeg -y -i temp_video.mp4 -i temp_audio.aac -filter_complex "[0:v]drawtext=text='Relax | Calm | Sleep':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h-text_h)/2" \
   -c:v libx264 -c:a aac -shortest -pix_fmt yuv420p -movflags +faststart "$OUTPUT"
+ffmpeg -y -i temp_video.mp4 -i temp_audio.aac -filter_complex "[0:v]drawtext=fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h-text_h)/2" \
+  -c:v libx264 -c:a aac -shortest -pix_fmt yuv420p -movflags +faststart "$OUTPUT"
+
 
 rm temp_video.mp4 temp_audio.aac
 echo "✅ Done! Video saved as: $OUTPUT"
