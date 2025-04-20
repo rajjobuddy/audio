@@ -1,8 +1,8 @@
 #!/bin/bash
 DATE=$(date +"%d%m%y")
 
-IMAGE="assets/image.jpg"
-AUDIO="assets/music.mp3"
+IMAGE="ls assets/*.jpg"
+AUDIO="ls assets/*.mp3"
 OUTPUT="${DATE}video10.mp4"
 DURATION=28800
 
