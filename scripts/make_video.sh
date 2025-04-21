@@ -4,7 +4,7 @@ DATE=$(date +"%d%m%y")
 IMAGE=`ls assets/*.jpg`
 AUDIO=`ls assets/*.mp3`
 OUTPUT="${DATE}video10.mp4"
-DURATION=28800
+DURATION=1800
 
 if [ ! -f "$IMAGE" ]; then
   echo "❌ Image file not found: $IMAGE"
