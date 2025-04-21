@@ -28,8 +28,8 @@ ffmpeg -y -stream_loop 1000 -i "$AUDIO" -t $DURATION \
 echo "🖊️ Merging with text overlay..."
 #ffmpeg -y -i temp_video.mp4 -i temp_audio.aac -filter_complex "[0:v]drawtext=text=' ':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h-text_h)/2" \
   -c:v libx264 -c:a aac -shortest -pix_fmt yuv420p -movflags +faststart "$OUTPUT"
-ffmpeg -y -i temp_video.mp4 -i temp_audio.aac -filter_complex "[0:v]drawtext=fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h-text_h)/2" \
-  -c:v libx264 -c:a aac -shortest -pix_fmt yuv420p -movflags +faststart "$OUTPUT"
+ffmpeg -y -i temp_video.mp4 -i temp_audio.aac \
+  -c:v libx264 -c:a aac -shortest -pix_fmt yuv420p -movflags +faststart "$OUTPUT"
 
 
 rm temp_video.mp4 temp_audio.aac
