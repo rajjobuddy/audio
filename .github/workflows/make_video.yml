@@ -2,7 +2,18 @@ name: Generate Relax Music Beads
 
 on:
   workflow_dispatch:  # You can also schedule it using 'schedule'
-
+    inputs:
+      duration:
+        description: "Select video duration"
+        required: true
+        default: "3600"
+        type: choice
+        options:
+          - 1800     # 30 minutes
+          - 3600     # 1 hour
+          - 7200     # 2 hours
+          - 14400    # 4 hours
+          - 28800    # 8 hours    
 jobs:
   build-video:
     runs-on: ubuntu-latest
@@ -20,7 +31,7 @@ jobs:
           sudo apt install -y ffmpeg
 
       - name: 🛠️ Run Bash video script
-        run: bash scripts/make_video.sh
+        run: bash scripts/make_video.sh ${{ github.event.inputs.duration }}
 
       - name: 📦 Upload final video as artifact
         uses: actions/upload-artifact@v4
