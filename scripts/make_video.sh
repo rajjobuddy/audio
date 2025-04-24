@@ -3,6 +3,8 @@ DATE=$(date +"%d%m%y")
 
 IMAGE=`ls assets/*.jpg`
 AUDIO=`ls assets/*.mp3`
+echo $IMAGE
+echo $AUDIO
 OUTPUT="${DATE}video10.mp4"
 DURATION=${1:-3600}
 
