@@ -8,6 +8,8 @@ echo $AUDIO
 OUTPUT="${DATE}video10.mp4"
 DURATION=${1:-3600}
 
+ffprobe "$IMAGE"
+
 if [ ! -f "$IMAGE" ]; then
   echo "❌ Image file not found: $IMAGE"
   exit 1
