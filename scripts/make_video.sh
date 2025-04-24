@@ -22,7 +22,7 @@ fi
 mv $IMAGE image.jpg
 mv $AUDIO audio.mp3
 echo "🎞️ Creating still background video..."
-ffmpeg -y -loop 1 -i "image.jpg" -t $DURATION -vf "fade=t=in:st=0:d=3,fade=t=out:st=$(($DURATION - 3)):d=3,format=yuv420p" \
+ffmpeg -y -i "image.jpg" -t $DURATION -vf "fade=t=in:st=0:d=3,fade=t=out:st=$(($DURATION - 3)):d=3,format=yuv420p" \
   -c:v libx264 -pix_fmt yuv420p temp_video.mp4
 
 echo "🎧 Looping and trimming audio..."
