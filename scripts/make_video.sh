@@ -32,5 +32,4 @@ ffmpeg -y -i temp_video.mp4 -i temp_audio.aac \
   -c:v libx264 -c:a aac -shortest -pix_fmt yuv420p -movflags +faststart "$OUTPUT"
 
 
-rm temp_video.mp4 temp_audio.aac
 echo "✅ Done! Video saved as: $OUTPUT"
