@@ -17,13 +17,14 @@ if [ ! -f "$AUDIO" ]; then
   echo "❌ Audio file not found: $AUDIO"
   exit 1
 fi
-
+mv $IMAGE image.jpg
+mv $AUDIO audio.mp3
 echo "🎞️ Creating still background video..."
-ffmpeg -y -loop 1 -i "$IMAGE" -t $DURATION -vf "fade=t=in:st=0:d=3,fade=t=out:st=$(($DURATION - 3)):d=3,format=yuv420p" \
+ffmpeg -y -loop 1 -i "image.jpg" -t $DURATION -vf "fade=t=in:st=0:d=3,fade=t=out:st=$(($DURATION - 3)):d=3,format=yuv420p" \
   -c:v libx264 -pix_fmt yuv420p temp_video.mp4
 
 echo "🎧 Looping and trimming audio..."
-ffmpeg -y -stream_loop 1000 -i "$AUDIO" -t $DURATION \
+ffmpeg -y -stream_loop 1000 -i "audio.mp3" -t $DURATION \
   -af "afade=t=in:st=0:d=3,afade=t=out:st=$(($DURATION - 3)):d=3" \
   -c:a aac -b:a 192k temp_audio.aac
 
