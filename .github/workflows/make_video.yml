@@ -12,7 +12,9 @@ on:
           - 1800     # 30 minutes
           - 3600     # 1 hour
           - 7200     # 2 hours
+          - 10800
           - 14400    # 4 hours
+          - 18000
           - 28800    # 8 hours    
 jobs:
   build-video:
