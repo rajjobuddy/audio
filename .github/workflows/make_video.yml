@@ -1,4 +1,4 @@
-name: Generate Relax Music Beads
+name: Convert Audio
 
 on:
   workflow_dispatch:  # You can also schedule it using 'schedule'
