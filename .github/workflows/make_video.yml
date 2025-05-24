@@ -1,31 +1,37 @@
 name: Convert Audio
 
 on:
-  workflow_dispatch:  # You can also schedule it using 'schedule'
-    inputs:
-      duration:
-        description: "Select video duration"
-        required: true
-        default: "3600"
-        type: choice
-        options:
-          - 1800     # 30 minutes
-          - 3600     # 1 hour
-          - 7200     # 2 hours
-          - 10800
-          - 14400    # 4 hours
-          - 18000
-          - 28800    # 8 hours    
+  push:
+    branches:
+      - '**'  # Triggers on push to any branch
+  create:
+    branches:
+      - '**'  # Triggers on branch creation
+
 jobs:
   build-video:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install dependencies
-        run: pip install google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
-
       - name: ⬇️ Checkout code
         uses: actions/checkout@v3
+
+      - name: 🔍 Extract duration based on branch name
+        id: duration
+        run: |
+          BRANCH_NAME="${GITHUB_REF##*/}"
+          echo "Branch name: $BRANCH_NAME"
+
+          if [[ "$BRANCH_NAME" == *-01 ]]; then
+            echo "duration=3600" >> $GITHUB_OUTPUT
+          elif [[ "$BRANCH_NAME" == *-04 ]]; then
+            echo "duration=14400" >> $GITHUB_OUTPUT
+          else
+            echo "duration=3600" >> $GITHUB_OUTPUT  # default fallback
+          fi
+
+      - name: Install dependencies
+        run: pip install google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
 
       - name: ⚙️ Set up FFmpeg
         run: |
@@ -33,7 +39,7 @@ jobs:
           sudo apt install -y ffmpeg
 
       - name: 🛠️ Run Bash video script
-        run: bash scripts/make_video.sh ${{ github.event.inputs.duration }}
+        run: bash scripts/make_video.sh "${{ steps.duration.outputs.duration }}"
 
       - name: 📦 Upload final video as artifact
         uses: actions/upload-artifact@v4
