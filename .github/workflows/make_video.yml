@@ -1,21 +1,29 @@
-name: Convert Audio
-
+name: Run the workflow
 on:
   push:
     branches:
-      - '**'  # Triggers on push to any branch
-  create:
-    branches:
-      - '**'  # Triggers on branch creation
+      - '**'
 
 jobs:
   build-video:
+    # ✅ Only run if the actor is the repo owner
     if: github.actor == github.repository_owner
     runs-on: ubuntu-latest
 
     steps:
       - name: ⬇️ Checkout code
         uses: actions/checkout@v3
+
+      - name: ⛔ Skip if commit message is not 'Add files via upload'
+        id: check_message
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Commit message: $COMMIT_MSG"
+
+          if [[ "$COMMIT_MSG" != Add\ files\ via\ upload* ]]; then
+            echo "Skipping workflow. Commit message does not match."
+            exit 78
+          fi
 
       - name: 🔍 Extract duration based on branch name
         id: duration
@@ -28,7 +36,7 @@ jobs:
           elif [[ "$BRANCH_NAME" == *-04 ]]; then
             echo "duration=14400" >> $GITHUB_OUTPUT
           else
-            echo "duration=3600" >> $GITHUB_OUTPUT  # default fallback
+            echo "duration=3600" >> $GITHUB_OUTPUT
           fi
 
       - name: Install dependencies
