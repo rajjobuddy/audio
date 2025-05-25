@@ -1,29 +1,41 @@
-name: Run the workflow
+name: Convert Audio (Owner + Upload Only)
+
 on:
   push:
     branches:
       - '**'
 
 jobs:
+  check-conditions:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.should_run.outputs.result }}
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v3
+
+      - name: ✅ Check if actor is repo owner and commit message matches
+        id: should_run
+        run: |
+          echo "result=false" >> $GITHUB_OUTPUT  # Default to false
+
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Commit message: $COMMIT_MSG"
+          echo "Actor: ${{ github.actor }}"
+          echo "Repo owner: ${{ github.repository_owner }}"
+
+          if [[ "${{ github.actor }}" == "${{ github.repository_owner }}" && "$COMMIT_MSG" == Add\ files\ via\ upload* ]]; then
+            echo "result=true" >> $GITHUB_OUTPUT
+          fi
+
   build-video:
-    # ✅ Only run if the actor is the repo owner
-    if: github.actor == github.repository_owner
+    needs: check-conditions
+    if: needs.check-conditions.outputs.should_run == 'true'
     runs-on: ubuntu-latest
 
     steps:
       - name: ⬇️ Checkout code
         uses: actions/checkout@v3
-
-      - name: ⛔ Skip if commit message is not 'Add files via upload'
-        id: check_message
-        run: |
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-          echo "Commit message: $COMMIT_MSG"
-
-          if [[ "$COMMIT_MSG" != Add\ files\ via\ upload* ]]; then
-            echo "Skipping workflow. Commit message does not match."
-            exit 78
-          fi
 
       - name: 🔍 Extract duration based on branch name
         id: duration
