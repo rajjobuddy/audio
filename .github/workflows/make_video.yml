@@ -1,4 +1,4 @@
-name: Convert Audio (Owner + Upload Only)
+name: Run the workflow
 
 on:
   push:
