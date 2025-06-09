@@ -65,5 +65,5 @@ jobs:
       - name: 📦 Upload final video as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: final-relaxing-video
+          name: final-relaxing-video-${{ github.run_id }}-${{ github.sha }}
           path: "*.mp4"
