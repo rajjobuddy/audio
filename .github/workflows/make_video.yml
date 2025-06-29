@@ -26,7 +26,7 @@ jobs:
           echo "Actor: ${{ github.actor }}"
           echo "Repo owner: ${{ github.repository_owner }}"
 
-          if [[ "${{ github.actor }}" == "${{ github.repository_owner }}"  ]]; then
+          if [[ "${{ github.actor }}" == "${{ github.repository_owner }}" && "$COMMIT_MSG" == Add\ files\ via\ upload* ]]; then
             echo "result=true" >> $GITHUB_OUTPUT
           fi
 
@@ -61,7 +61,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y ffmpeg
-          echo "hello"
 
       - name: 🛠️ Run Bash video script
         run: bash scripts/make_video.sh "${{ steps.duration.outputs.duration }}"
