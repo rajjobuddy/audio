@@ -50,7 +50,8 @@ jobs:
           elif [[ "$BRANCH_NAME" == *-04 ]]; then
             echo "duration=14400" >> $GITHUB_OUTPUT
           else
-            echo "duration=3600" >> $GITHUB_OUTPUT
+            echo "Not setting Duration"
+            break
           fi
 
       - name: Install dependencies
