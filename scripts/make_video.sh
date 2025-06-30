@@ -6,7 +6,7 @@ set -e
 # Settings
 VIDEO=$(ls assets/*.mp4 2>/dev/null | head -n 1)
 AUDIO=$(ls assets/*.mp3 2>/dev/null | head -n 1)
-DURATION=3600  # 1 hour in seconds
+DURATION=${1:-3600}
 OUTPUT="output1hour.mp4"
 
 if [ -z "$VIDEO" ] || [ ! -f "$VIDEO" ]; then
