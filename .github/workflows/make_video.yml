@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - '**'
-  workflow_dispatch:
-
 
 jobs:
   check-conditions:
@@ -50,8 +48,7 @@ jobs:
           elif [[ "$BRANCH_NAME" == *-04 ]]; then
             echo "duration=14400" >> $GITHUB_OUTPUT
           else
-            echo "Not setting Duration"
-            break
+            echo "duration=0" >> $GITHUB_OUTPUT
           fi
 
       - name: Install dependencies
@@ -70,4 +67,3 @@ jobs:
         with:
           name: final-relaxing-video-${{ github.run_id }}-${{ github.sha }}
           path: "*.mp4"
-          
