@@ -1,7 +1,7 @@
-name: Convert Image+Audio and Stream to YouTube
+name: Loop Image+Audio for 10 Minutes and Stream to YouTube
 
 on:
-  workflow_dispatch:  # Run manually
+  workflow_dispatch:  # Run manually from GitHub UI
 
 jobs:
   stream:
@@ -14,11 +14,12 @@ jobs:
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-      - name: Generate video from image and audio
+      - name: Create 10-minute looping video
         run: |
-          ffmpeg -loop 1 -i cover.jpg -i audio.mp3 \
+          ffmpeg -stream_loop -1 -i audio.mp3 -loop 1 -i cover.jpg \
+          -t 300 -shortest \
           -c:v libx264 -tune stillimage -c:a aac -b:a 192k \
-          -pix_fmt yuv420p -shortest -movflags +faststart \
+          -pix_fmt yuv420p -movflags +faststart \
           output.mp4
 
       - name: Stream to YouTube Live
