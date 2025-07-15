@@ -1,57 +1,55 @@
-name: Generate Music from Natural Language Prompt (MusicGen)
+# File: .github/workflows/musicgen_hf.yml
+
+name: Generate Music with MusicGen (Hugging Face API)
 
 on:
   workflow_dispatch:
     inputs:
       prompt:
-        description: 'Enter music description (e.g., Peaceful bamboo chimes blended with stream)'
+        description: 'Describe the music (e.g. "Peaceful bamboo chimes blended with a gentle mountain stream")'
         required: true
         default: 'Peaceful bamboo chimes blended with a gentle mountain stream for sleep and calm'
 
 jobs:
   musicgen:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install ffmpeg
+      - name: Install ffmpeg & jq
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y ffmpeg jq curl
 
-      - name: Generate music with Hugging Face MusicGen
+      - name: Request MusicGen via HF Inference API
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           PROMPT: ${{ github.event.inputs.prompt }}
         run: |
-          echo "Generating music for prompt: $PROMPT"
-      
-          curl -L -X POST "https://api-inference.huggingface.co/models/facebook/musicgen-melody" \
+          echo "🔊 Generating music for prompt: '$PROMPT'"
+          curl -L \
             -H "Authorization: Bearer $HF_TOKEN" \
+            -H "Accept: audio/wav" \
             -H "Content-Type: application/json" \
-            -d "{\"inputs\": \"$PROMPT\"}" \
-            --output output.wav
-      
-          # Check if file is really audio
+            -d "{\"text\": \"$PROMPT\"}" \
+            https://api-inference.huggingface.co/models/facebook/musicgen-small \
+            --output output.wav \
+            --fail
+
+          echo "📦 Verifying output.wav"
           file output.wav
-      
-          if ! file output.wav | grep -q "RIFF (little-endian) data"; then
-            echo "❌ Invalid audio received from Hugging Face."
-            cat output.wav
-            exit 1
-          fi
-      
-          echo "✅ Audio received, converting to MP3"
+
+      - name: Convert WAV → MP3
+        run: |
+          echo "🎵 Converting output.wav → output.mp3"
           ffmpeg -y -i output.wav -codec:a libmp3lame -qscale:a 2 output.mp3
+          ls -lh output.*
 
-
-
-      - name: Upload generated audio files
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: musicgen_output
+          name: musicgen-${{ github.run_id }}
           path: |
             output.wav
             output.mp3
