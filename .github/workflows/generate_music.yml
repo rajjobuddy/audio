@@ -66,9 +66,10 @@ jobs:
           ffmpeg -i output.wav -codec:a libmp3lame -qscale:a 2 output.mp3
 
       - name: Upload Music Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact/upload@v4
         with:
           name: AI_Music_${{ github.run_id }}
           path: |
             output.mid
             output.mp3
+
