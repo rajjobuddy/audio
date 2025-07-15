@@ -1,57 +1,58 @@
-name: Generate Music with Hugging Face MusicGen Space
+name: Generate Music via MusicGen Transformer in GitHub Action
 
 on:
   workflow_dispatch:
     inputs:
       prompt:
-        description: 'Enter your music prompt'
+        description: 'Enter natural-language music prompt'
         required: true
         default: 'Peaceful bamboo chimes blended with a gentle mountain stream for sleep and calm'
 
 jobs:
   generate-music:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout 🧾
         uses: actions/checkout@v4
 
-      - name: Install tools
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg jq curl
+          sudo apt-get install -y ffmpeg python3-pip
+          pip install transformers torch scipy
 
-      - name: Generate Music from Prompt (Hugging Face Space API)
+      - name: Generate music with MusicGen
         env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
           PROMPT: ${{ github.event.inputs.prompt }}
         run: |
-          echo "🎶 Prompt: $PROMPT"
+          cat << 'PYCODE' > gen_music.py
+          from transformers import pipeline
+          import os, scipy.io.wavfile as wavfile
 
-          echo "📡 Sending request to Hugging Face MusicGen Space..."
-          RESPONSE=$(curl -s -X POST https://fffiloni-musicgen.hf.space/api/predict/ \
-            -H "Content-Type: application/json" \
-            -d "{\"data\": [\"$PROMPT\"]}")
+          prompt = os.getenv("PROMPT")
+          print(f"🔊 Prompt: {prompt}")
 
-          echo "$RESPONSE" > response.json
-          cat response.json
+          pipe = pipeline("text-to-audio", "facebook/musicgen-small",
+                          use_auth_token=os.getenv("HF_TOKEN"))
+          music = pipe(prompt, do_sample=True)
+          rate = music["sampling_rate"]
+          data = music["audio"]
 
-          AUDIO_PATH=$(jq -r '.data[1].name' response.json)
+          wavfile.write("output.wav", rate, data)
+          print("✅ Saved output.wav")
+          PYCODE
 
-          if [[ "$AUDIO_PATH" == "null" || -z "$AUDIO_PATH" ]]; then
-            echo "❌ Failed to get audio path. Full response:"
-            cat response.json
-            exit 1
-          fi
+          python3 gen_music.py
 
-          echo "🎧 Downloading audio: $AUDIO_PATH"
-          curl -L "https://fffiloni-musicgen.hf.space/file=$AUDIO_PATH" --output output.wav
-
-          echo "🎵 Converting WAV to MP3"
+      - name: Transcode to MP3
+        run: |
           ffmpeg -y -i output.wav -codec:a libmp3lame -qscale:a 2 output.mp3
+          ls -lh output.*
 
-      - name: Upload Artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: musicgen-audio
-          path: |
-            output.wav
-            output.mp3
+          name: musicgen-clip-${{ github.run_id }}
+          path: output.wav, output.mp3
