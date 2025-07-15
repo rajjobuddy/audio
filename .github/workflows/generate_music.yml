@@ -1,4 +1,4 @@
-name: Generate Music with Hugging Face Space
+name: Generate Music with Hugging Face MusicGen Space
 
 on:
   workflow_dispatch:
@@ -20,39 +20,38 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg jq curl
 
-      - name: Generate Music with Hugging Face Space
+      - name: Generate Music from Prompt (Hugging Face Space API)
         env:
           PROMPT: ${{ github.event.inputs.prompt }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           echo "🎶 Prompt: $PROMPT"
 
-          echo "📡 Sending request to Hugging Face Space"
-          RESPONSE=$(curl -s -X POST "https://fffiloni-musicgen.hf.space/run/predict" \
-            -H "Authorization: Bearer $HF_TOKEN" \
+          echo "📡 Sending request to Hugging Face MusicGen Space..."
+          RESPONSE=$(curl -s -X POST https://fffiloni-musicgen.hf.space/api/predict/ \
             -H "Content-Type: application/json" \
             -d "{\"data\": [\"$PROMPT\"]}")
 
           echo "$RESPONSE" > response.json
           cat response.json
 
-          AUDIO_FILE=$(jq -r '.data[1].name' response.json)
+          AUDIO_PATH=$(jq -r '.data[1].name' response.json)
 
-          if [[ "$AUDIO_FILE" == "null" || -z "$AUDIO_FILE" ]]; then
-            echo "❌ No audio file found in response"
+          if [[ "$AUDIO_PATH" == "null" || -z "$AUDIO_PATH" ]]; then
+            echo "❌ Failed to get audio path. Full response:"
+            cat response.json
             exit 1
           fi
 
-          echo "🎧 Downloading audio: $AUDIO_FILE"
-          curl -L "https://fffiloni-musicgen.hf.space/file=$AUDIO_FILE" --output output.wav
+          echo "🎧 Downloading audio: $AUDIO_PATH"
+          curl -L "https://fffiloni-musicgen.hf.space/file=$AUDIO_PATH" --output output.wav
 
-          echo "🎵 Converting to MP3"
+          echo "🎵 Converting WAV to MP3"
           ffmpeg -y -i output.wav -codec:a libmp3lame -qscale:a 2 output.mp3
 
-      - name: Upload audio files
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: generated-music
+          name: musicgen-audio
           path: |
             output.wav
             output.mp3
