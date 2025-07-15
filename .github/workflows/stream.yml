@@ -1,0 +1,31 @@
+name: Convert Image+Audio and Stream to YouTube
+
+on:
+  workflow_dispatch:  # Run manually
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Generate video from image and audio
+        run: |
+          ffmpeg -loop 1 -i cover.jpg -i audio.mp3 \
+          -c:v libx264 -tune stillimage -c:a aac -b:a 192k \
+          -pix_fmt yuv420p -shortest -movflags +faststart \
+          output.mp4
+
+      - name: Stream to YouTube Live
+        env:
+          YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
+        run: |
+          ffmpeg -re -i output.mp4 \
+          -c:v libx264 -preset veryfast -maxrate 3000k -bufsize 6000k \
+          -pix_fmt yuv420p -g 50 -c:a aac -b:a 160k -ar 44100 \
+          -f flv "rtmp://a.rtmp.youtube.com/live2/$YOUTUBE_STREAM_KEY"
