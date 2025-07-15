@@ -27,13 +27,28 @@ jobs:
           PROMPT: ${{ github.event.inputs.prompt }}
         run: |
           echo "Generating music for prompt: $PROMPT"
-          curl -X POST https://api-inference.huggingface.co/models/facebook/musicgen-small \
+          
+          curl -s -X POST https://api-inference.huggingface.co/models/facebook/musicgen-small \
             -H "Authorization: Bearer $HF_TOKEN" \
             -H "Content-Type: application/json" \
-            -d "{\"inputs\":\"$PROMPT\"}" --output output.wav
-
+            -d "{\"inputs\":\"$PROMPT\"}" -o response.json
+      
+          cat response.json
+      
+          # Try to extract audio if returned as raw binary
+          AUDIO_BASE64=$(jq -r '.audio' response.json)
+          if [ "$AUDIO_BASE64" != "null" ]; then
+            echo "$AUDIO_BASE64" | base64 -d > output.wav
+          elif file response.json | grep -q 'RIFF'; then
+            mv response.json output.wav
+          else
+            echo "❌ No valid audio returned from MusicGen"
+            exit 1
+          fi
+      
           echo "Converting WAV to MP3"
           ffmpeg -y -i output.wav -codec:a libmp3lame -qscale:a 2 output.mp3
+
 
       - name: Upload generated audio files
         uses: actions/upload-artifact@v4
