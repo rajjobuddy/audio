@@ -1,44 +1,44 @@
-name: Generate AI Music from Prompt
+name: Generate Music from Natural Language Prompt (MusicGen)
 
 on:
   workflow_dispatch:
     inputs:
       prompt:
-        description: 'Describe the music (e.g., "happy melody in C major")'
+        description: 'Enter music description (e.g., Peaceful bamboo chimes blended with stream)'
         required: true
-        default: 'happy melody in C major'
+        default: 'Peaceful bamboo chimes blended with a gentle mountain stream for sleep and calm'
 
 jobs:
-  generate-music:
+  musicgen:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Install Python and dependencies
+      - name: Install ffmpeg
         run: |
           sudo apt-get update
-          sudo apt-get install -y timidity ffmpeg
-          pip install music21
+          sudo apt-get install -y ffmpeg
 
-      - name: Generate MIDI from prompt
-        run: |
-          python3 generate_music.py
-
+      - name: Generate music with Hugging Face MusicGen
         env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
           PROMPT: ${{ github.event.inputs.prompt }}
-
-      - name: Convert MIDI to WAV (optional)
         run: |
-          timidity output.mid -Ow -o output.wav
-          ffmpeg -i output.wav -codec:a libmp3lame -qscale:a 2 output.mp3
+          echo "Generating music for prompt: $PROMPT"
+          curl -X POST https://api-inference.huggingface.co/models/facebook/musicgen-small \
+            -H "Authorization: Bearer $HF_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"inputs\":\"$PROMPT\"}" --output output.wav
 
-      - name: Upload Music Artifact
+          echo "Converting WAV to MP3"
+          ffmpeg -y -i output.wav -codec:a libmp3lame -qscale:a 2 output.mp3
+
+      - name: Upload generated audio files
         uses: actions/upload-artifact@v4
         with:
-          name: AI_Music_${{ github.run_id }}
+          name: musicgen_output
           path: |
-            output.mid
+            output.wav
             output.mp3
-
