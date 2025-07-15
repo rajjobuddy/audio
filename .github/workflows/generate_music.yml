@@ -1,55 +1,58 @@
-# File: .github/workflows/musicgen_hf.yml
-
-name: Generate Music with MusicGen (Hugging Face API)
+name: Generate Music with Hugging Face Space
 
 on:
   workflow_dispatch:
     inputs:
       prompt:
-        description: 'Describe the music (e.g. "Peaceful bamboo chimes blended with a gentle mountain stream")'
+        description: 'Enter your music prompt'
         required: true
         default: 'Peaceful bamboo chimes blended with a gentle mountain stream for sleep and calm'
 
 jobs:
-  musicgen:
+  generate-music:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install ffmpeg & jq
+      - name: Install tools
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg jq curl
 
-      - name: Request MusicGen via HF Inference API
+      - name: Generate Music with Hugging Face Space
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
           PROMPT: ${{ github.event.inputs.prompt }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          echo "🔊 Generating music for prompt: '$PROMPT'"
-          curl -L \
+          echo "🎶 Prompt: $PROMPT"
+
+          echo "📡 Sending request to Hugging Face Space"
+          RESPONSE=$(curl -s -X POST "https://fffiloni-musicgen.hf.space/run/predict" \
             -H "Authorization: Bearer $HF_TOKEN" \
-            -H "Accept: audio/wav" \
             -H "Content-Type: application/json" \
-            -d "{\"text\": \"$PROMPT\"}" \
-            https://api-inference.huggingface.co/models/facebook/musicgen-small \
-            --output output.wav \
-            --fail
+            -d "{\"data\": [\"$PROMPT\"]}")
 
-          echo "📦 Verifying output.wav"
-          file output.wav
+          echo "$RESPONSE" > response.json
+          cat response.json
 
-      - name: Convert WAV → MP3
-        run: |
-          echo "🎵 Converting output.wav → output.mp3"
+          AUDIO_FILE=$(jq -r '.data[1].name' response.json)
+
+          if [[ "$AUDIO_FILE" == "null" || -z "$AUDIO_FILE" ]]; then
+            echo "❌ No audio file found in response"
+            exit 1
+          fi
+
+          echo "🎧 Downloading audio: $AUDIO_FILE"
+          curl -L "https://fffiloni-musicgen.hf.space/file=$AUDIO_FILE" --output output.wav
+
+          echo "🎵 Converting to MP3"
           ffmpeg -y -i output.wav -codec:a libmp3lame -qscale:a 2 output.mp3
-          ls -lh output.*
 
-      - name: Upload artifacts
+      - name: Upload audio files
         uses: actions/upload-artifact@v4
         with:
-          name: musicgen-${{ github.run_id }}
+          name: generated-music
           path: |
             output.wav
             output.mp3
