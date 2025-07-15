@@ -22,29 +22,15 @@ jobs:
           sudo apt-get install -y ffmpeg python3-pip
           pip install transformers torch scipy
 
-      - name: Generate music with MusicGen
+      - name: Generate music with MusicGen (manual model load)
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           PROMPT: ${{ github.event.inputs.prompt }}
         run: |
-          cat << 'PYCODE' > gen_music.py
-          from transformers import pipeline
-          import os, scipy.io.wavfile as wavfile
-
-          prompt = os.getenv("PROMPT")
-          print(f"🔊 Prompt: {prompt}")
-
-          pipe = pipeline("text-to-audio", "facebook/musicgen-small",
-                          use_auth_token=os.getenv("HF_TOKEN"))
-          music = pipe(prompt, do_sample=True)
-          rate = music["sampling_rate"]
-          data = music["audio"]
-
-          wavfile.write("output.wav", rate, data)
-          print("✅ Saved output.wav")
-          PYCODE
-
+          pip install transformers torchaudio scipy
           python3 gen_music.py
+
+
 
       - name: Transcode to MP3
         run: |
