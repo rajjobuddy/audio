@@ -1,0 +1,74 @@
+name: Generate AI Music from Prompt
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: 'Describe the music (e.g., "happy melody in C major")'
+        required: true
+        default: 'happy melody in C major'
+
+jobs:
+  generate-music:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Python and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y timidity
+          pip install music21
+
+      - name: Generate MIDI from prompt
+        run: |
+          cat <<EOF > generate_music.py
+          from music21 import stream, note, chord, midi
+          import random
+          import re
+          import os
+
+          prompt = os.getenv("PROMPT").lower()
+
+          def extract_key(prompt):
+              match = re.search(r'([a-g])\s*major', prompt)
+              if match:
+                  return match.group(1).upper() + '4'
+              return 'C4'
+
+          base_note = extract_key(prompt)
+          scale = [note.Note(base_note)]
+          for interval in [2, 2, 1, 2, 2, 2, 1]:
+              scale.append(scale[-1].transpose(interval))
+
+          melody = stream.Stream()
+          for _ in range(32):
+              n = random.choice(scale)
+              n.quarterLength = random.choice([0.25, 0.5, 1.0])
+              melody.append(n)
+
+          mf = midi.translate.streamToMidiFile(melody)
+          mf.open("output.mid", 'wb')
+          mf.write()
+          mf.close()
+          EOF
+
+          python3 generate_music.py
+
+        env:
+          PROMPT: ${{ github.event.inputs.prompt }}
+
+      - name: Convert MIDI to WAV (optional)
+        run: |
+          timidity output.mid -Ow -o output.wav
+          ffmpeg -i output.wav -codec:a libmp3lame -qscale:a 2 output.mp3
+
+      - name: Upload Music Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: AI_Music_${{ github.run_id }}
+          path: |
+            output.mid
+            output.mp3
