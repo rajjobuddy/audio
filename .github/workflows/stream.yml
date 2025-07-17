@@ -17,7 +17,7 @@ jobs:
       - name: Create 10-minute looping video
         run: |
           ffmpeg -stream_loop -1 -i audio.mp3 -loop 1 -i cover.jpg \
-          -t 300 -shortest \
+          -t 7200 -shortest \
           -c:v libx264 -tune stillimage -c:a aac -b:a 192k \
           -pix_fmt yuv420p -movflags +faststart \
           output.mp4
