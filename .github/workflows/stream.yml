@@ -1,4 +1,4 @@
-name: Loop Image+Audio for 4 HOURS and Stream to YouTube
+name: Loop 4h live
 
 on:
   workflow_dispatch:  # Run manually from GitHub UI
