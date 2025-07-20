@@ -1,32 +1,100 @@
-name: Loop 4h live
+name: Auto Stream YouTube -live
 
 on:
-  workflow_dispatch:  # Run manually from GitHub UI
+  schedule:
+    - cron: '0 19 * * *'  # Runs every day at 2:00 PM EST (which is 7:00 PM UTC)
+  workflow_dispatch:     # Allows manual trigger as well
+
+permissions:
+  contents: write
 
 jobs:
-  stream:
+  auto-stream:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Install FFmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Set current date
+        id: set_date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
-      - name: Create 4 hrs looping video
+      - name: Get latest successful run with branch suffix -live
+        id: get_run
         run: |
-          ffmpeg -stream_loop -1 -i audio.mp3 -loop 1 -i cover.jpg \
-          -t 14400 -shortest \
-          -c:v libx264 -tune stillimage -c:a aac -b:a 192k \
-          -pix_fmt yuv420p -movflags +faststart \
-          output.mp4
+          SUFFIX="-live"
+          RESPONSE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/rajjobuddy/audio/actions/runs?status=success&per_page=50")
+
+          RUN_ID=$(echo "$RESPONSE" | jq -r --arg suffix "$SUFFIX" '
+            .workflow_runs
+            | map(select(.head_branch | test("\($suffix)$")))
+            | sort_by(.created_at) | reverse
+            | .[0].id')
+
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+
+      - name: Get artifact info
+        id: get_artifact
+        run: |
+          RUN_ID=${{ steps.get_run.outputs.run_id }}
+          ARTIFACTS_JSON=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/rajjobuddy/audio/actions/runs/$RUN_ID/artifacts")
+
+          ARTIFACT_NAME=$(echo "$ARTIFACTS_JSON" | jq -r '.artifacts[0].name')
+          ARTIFACT_URL=$(echo "$ARTIFACTS_JSON" | jq -r '.artifacts[0].archive_download_url')
+
+          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+          echo "artifact_url=$ARTIFACT_URL" >> $GITHUB_OUTPUT
+
+      - name: Check if artifact was already uploaded
+        id: check_uploaded
+        run: |
+          ARTIFACT_NAME=${{ steps.get_artifact.outputs.artifact_name }}
+          LOG_FILE=".uploaded_artifacts"
+
+          if [ -f "$LOG_FILE" ] && grep -q "$ARTIFACT_NAME" "$LOG_FILE"; then
+            echo "Artifact already uploaded."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Exit if already uploaded
+        if: steps.check_uploaded.outputs.skip == 'true'
+        run: echo "Already uploaded. Skipping stream."
+
+      - name: Download artifact
+        if: steps.check_uploaded.outputs.skip == 'false'
+        run: |
+          curl -L -H "Authorization: token $GITHUB_TOKEN" -o artifact.zip "${{ steps.get_artifact.outputs.artifact_url }}"
+          unzip artifact.zip -d downloaded-artifact
+
+      - name: List downloaded files
+        if: steps.check_uploaded.outputs.skip == 'false'
+        run: ls -R downloaded-artifact
 
       - name: Stream to YouTube Live
+        if: steps.check_uploaded.outputs.skip == 'false'
         env:
           YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
         run: |
-          ffmpeg -re -i output.mp4 \
-          -c:v libx264 -preset veryfast -maxrate 3000k -bufsize 6000k \
-          -pix_fmt yuv420p -g 50 -c:a aac -b:a 160k -ar 44100 \
-          -f flv "rtmp://a.rtmp.youtube.com/live2/$YOUTUBE_STREAM_KEY"
+          ffmpeg -re -stream_loop -1 -i downloaded-artifact/*.mp4 \
+            -c:v libx264 -preset veryfast -maxrate 3000k -bufsize 6000k \
+            -pix_fmt yuv420p -g 50 -c:a aac -b:a 160k -ar 44100 \
+            -f flv "rtmp://a.rtmp.youtube.com/live2/$YOUTUBE_STREAM_KEY"
+
+      - name: Mark artifact as uploaded
+        if: steps.check_uploaded.outputs.skip == 'false'
+        run: |
+          ARTIFACT_NAME=${{ steps.get_artifact.outputs.artifact_name }}
+          echo "$ARTIFACT_NAME" >> .uploaded_artifacts
+
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add .uploaded_artifacts
+          git commit -m "Mark $ARTIFACT_NAME as uploaded"
+          git push
