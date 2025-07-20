@@ -48,7 +48,7 @@ jobs:
           elif [[ "$BRANCH_NAME" == *-04 ]]; then
             echo "duration=14400" >> $GITHUB_OUTPUT
           elif [[ "$BRANCH_NAME" == *-live ]]; then
-            echo "duration=21600" >> $GITHUB_OUTPUT
+            echo "duration=14400" >> $GITHUB_OUTPUT
           else
             echo "duration=0" >> $GITHUB_OUTPUT
           fi
