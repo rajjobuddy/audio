@@ -85,7 +85,7 @@ jobs:
         env:
           YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
         run: |
-          ffmpeg -re -stream_loop -1 -i downloaded-artifact/*.mp4 \
+          ffmpeg -re -i downloaded-artifact/*.mp4 \
             -c:v libx264 -preset veryfast -maxrate 3000k -bufsize 6000k \
             -pix_fmt yuv420p -g 50 -c:a aac -b:a 160k -ar 44100 \
             -f flv "rtmp://a.rtmp.youtube.com/live2/$YOUTUBE_STREAM_KEY"
