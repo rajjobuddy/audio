@@ -21,6 +21,9 @@ jobs:
       - name: Set current date
         id: set_date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+      
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: Get latest successful run with branch suffix -live
         id: get_run
