@@ -1,4 +1,4 @@
-name: Generate zipzoom
+name: Lush
 
 on:
   workflow_dispatch:
