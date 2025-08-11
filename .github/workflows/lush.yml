@@ -1,0 +1,174 @@
+name: Generate zipzoom
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: "Video generation prompt"
+        required: true
+        default: "A boy playing football"
+
+jobs:
+  generate-video:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      # Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
+          create_credentials_file: true
+
+      # Debug: Check service account key file
+      - name: Debug service account key
+        run: |
+          if [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+            echo "Service account key file found at $GOOGLE_APPLICATION_CREDENTIALS"
+            cat $GOOGLE_APPLICATION_CREDENTIALS | jq .client_email
+          else
+            echo "Error: Service account key file not found"
+            exit 1
+          fi
+
+      # Verify authentication
+      - name: Verify Google Cloud authentication
+        run: |
+          gcloud auth list
+          if ! gcloud auth print-access-token; then
+            echo "Error: Authentication failed"
+            exit 1
+          fi
+          echo "Authentication successful"
+          export PROJECT_ID=$(jq -r .project_id < "${GOOGLE_APPLICATION_CREDENTIALS}")
+          echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+
+      # Generate video
+      - name: Generate video with Veo
+        run: |
+          set -e
+
+          # Config variables
+          LOCAL_DIR="./videos"
+          mkdir -p "$LOCAL_DIR"
+
+          LOCATION_ID="us-central1"
+          API_ENDPOINT="us-central1-aiplatform.googleapis.com"
+          MODEL_ID="veo-3.0-fast-generate-001"
+          STORAGE_URI="gs://helloranjan1/output/"
+
+          PROMPT="${{ github.event.inputs.prompt }}"
+          echo "===================================="
+          echo "🎯 PROMPT: $PROMPT"
+          echo "===================================="
+
+          SANITIZED_PROMPT=$(echo "$PROMPT" | tr ' ' '_' | tr -cd '[:alnum:]_')
+          echo "Output filename will be: ${LOCAL_DIR}/${SANITIZED_PROMPT}.mp4"
+
+          # Create request.json for video generation with safety settings
+          cat << EOF > request.json
+          {
+            "instances": [
+              {
+                "prompt": "${PROMPT}"
+              }
+            ],
+            "parameters": {
+              "aspectRatio": "16:9",
+              "sampleCount": 1,
+              "durationSeconds": "8",
+              "personGeneration": "allow_adult",
+              "enablePromptRewriting": true,
+              "addWatermark": true,
+              "includeRaiReason": true,
+              "storageUri": "${STORAGE_URI}"
+            },
+            "safetySettings": [
+              { "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE" },
+              { "category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE" },
+              { "category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE" },
+              { "category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE" }
+            ]
+          }
+EOF
+
+          # Start video generation and get operation ID
+          echo "Initiating video generation..."
+          OPERATION_ID=$(curl -s \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+            "https://${API_ENDPOINT}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${MODEL_ID}:predictLongRunning" \
+            -d '@request.json' | sed -n 's/.*"name": "\(.*\)".*/\1/p')
+
+          if [ -z "$OPERATION_ID" ]; then
+            echo "Error: Failed to get OPERATION_ID. Check authentication or API access."
+            rm -f request.json
+            exit 1
+          fi
+
+          echo "OPERATION_ID: ${OPERATION_ID}"
+
+          # Poll for operation completion
+          echo "Waiting for video generation to complete..."
+          MAX_ATTEMPTS=30
+          ATTEMPT=1
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "{\"operationName\": \"${OPERATION_ID}\"}" > fetch.json
+            RESPONSE=$(curl -s \
+              -X POST \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+              "https://${API_ENDPOINT}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${MODEL_ID}:fetchPredictOperation" \
+              -d '@fetch.json')
+
+            if echo "$RESPONSE" | grep -q '"done": true'; then
+              echo "✅ Video generation completed!"
+              break
+            fi
+            echo "⏳ Attempt $ATTEMPT/$MAX_ATTEMPTS: Still processing, waiting 10 seconds..."
+            sleep 10
+            ATTEMPT=$((ATTEMPT + 1))
+          done
+
+          # Extract video URI
+          VIDEO_URI=$(echo "$RESPONSE" | jq -r '.response.videos[].gcsUri' 2>/dev/null | head -n 1)
+          if [ -z "$VIDEO_URI" ]; then
+            echo "Error: No video URI found in response"
+            echo "Response: $RESPONSE"
+            rm -f request.json fetch.json
+            exit 1
+          fi
+
+          echo "📥 Video URI: $VIDEO_URI"
+
+          # Download and add music
+          AUDIO_FILE="./background.mp3" # Provide your audio file path or download dynamically
+          FILENAME=$(basename "$VIDEO_URI")
+          OUTPUT_FILENAME="${LOCAL_DIR}/${SANITIZED_PROMPT}.mp4"
+          echo "Downloading video..."
+          gsutil cp "$VIDEO_URI" "${LOCAL_DIR}/${FILENAME}"
+
+          echo "🎵 Adding background music..."
+          ffmpeg -i "${LOCAL_DIR}/${FILENAME}" -i "$AUDIO_FILE" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 -shortest -y "$OUTPUT_FILENAME"
+
+          # Clean up
+          rm -f "${LOCAL_DIR}/${FILENAME}" request.json fetch.json
+          gsutil rm "$VIDEO_URI" || echo "⚠️ Warning: Failed to delete from bucket"
+
+          echo "✅ Done! Final video saved at $OUTPUT_FILENAME"
+
+      # Upload video as artifact
+      - name: Upload video artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: animated-video-${{ github.run_id }}-${{ github.run_number }}
+          path: ./videos/*.mp4
+          retention-days: 7
