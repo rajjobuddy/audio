@@ -1,11 +1,13 @@
 #!/bin/bash
 set -e
+DATE=$(date +"%d%m%y")
+EPOCH=$(date +%s)
 
 # Settings
 VIDEO=$(ls assets/*.mp4 2>/dev/null | head -n 1)
 AUDIO=$(ls assets/*.mp3 2>/dev/null | head -n 1)
 DURATION=${1:-3600}
-OUTPUT="output1hour.mp4"
+OUTPUT="${DATE}-${EPOCH}.mp4"
 
 if [ -z "$VIDEO" ] || [ ! -f "$VIDEO" ]; then
   echo "❌ Video file not found in assets/."
