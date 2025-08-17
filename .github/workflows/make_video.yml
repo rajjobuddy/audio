@@ -62,12 +62,11 @@ jobs:
           sudo apt install -y ffmpeg
 
       - name: 🛠️ Run Bash video script
-        run: bash scripts/make_video.sh 600
-      #  run: bash scripts/make_video.sh "${{ steps.duration.outputs.duration }}"
+        run: bash scripts/make_video.sh "${{ steps.duration.outputs.duration }}"
         
       - name: 🛠️ Run Bash video script for shorts
         run: |
-          bash scripts/make_video.sh "175"
+          bash scripts/make_video.sh "178"
           LATEST_FILE=$(ls -t *.mp4 | head -n 1)
           if [ -z "$LATEST_FILE" ]; then
             echo "❌ No .mp4 files found in the current directory."
