@@ -63,6 +63,9 @@ jobs:
 
       - name: 🛠️ Run Bash video script
         run: bash scripts/make_video.sh "${{ steps.duration.outputs.duration }}"
+        
+      - name: 🛠️ Run Bash video script for shorts
+        run: bash scripts/make_video.sh "175"
 
       - name: 📦 Upload final video as artifact
         uses: actions/upload-artifact@v4
