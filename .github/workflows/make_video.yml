@@ -45,7 +45,7 @@ jobs:
 
           if [[ "$BRANCH_NAME" == *-01 ]]; then
             echo "duration=3600" >> $GITHUB_OUTPUT
-            echo "MAKE_VIDEO_SCRIPT=make_video_play" >> $GITHUB_OUTPUT
+            echo "MAKE_VIDEO_SCRIPT=make_video" >> $GITHUB_OUTPUT
           elif [[ "$BRANCH_NAME" == *-04 ]]; then
             echo "duration=14400" >> $GITHUB_OUTPUT
             echo "MAKE_VIDEO_SCRIPT=make_video" >> $GITHUB_OUTPUT
