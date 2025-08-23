@@ -65,23 +65,6 @@ jobs:
 
       - name: 🛠️ Run Bash video script
         run: bash scripts/${{ steps.duration.outputs.MAKE_VIDEO_SCRIPT }}.sh "${{ steps.duration.outputs.duration }}"
-        
-      - name: 🛠️ Run Bash video script for shorts
-        run: |
-          bash scripts/${{ steps.duration.outputs.MAKE_VIDEO_SCRIPT }}.sh "178"
-          LATEST_FILE=$(ls -t *.mp4 | head -n 1)
-          if [ -z "$LATEST_FILE" ]; then
-            echo "❌ No .mp4 files found in the current directory."
-            exit 1
-          fi
-          OUTPUT_FILE="converted_${LATEST_FILE}"
-          ffmpeg -i "$LATEST_FILE" -vf "crop=in_h*9/16:in_h:(in_w-out_w)/2:0" -c:a copy "$OUTPUT_FILE"
-          if [ $? ]; then
-            echo "✅ Conversion complete: $OUTPUT_FILE"
-            echo "Removing $OUTPUT_FILE..."
-            rm $LATEST_FILE
-          fi
-        
 
       - name: 📦 Upload final video as artifact
         uses: actions/upload-artifact@v4
