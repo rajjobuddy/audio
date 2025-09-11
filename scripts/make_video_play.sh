@@ -28,8 +28,8 @@ ffmpeg -y -stream_loop -1 -i "$AUDIO" -t $DURATION \
   -c:a aac -b:a 192k temp_audio.aac
 
 echo "🎬 Merging video and audio..."
-ffmpeg -y -i temp_video.mp4 -i temp_audio.aac \
-  -c:v copy -c:a copy -shortest -movflags +faststart "$OUTPUT"
+ffmpeg -i temp_video.mp4 -i temp_audio.aac -c:v libx264 -crf 25 -preset medium -movflags +frag_keyframe+empty_moov+faststart -c:a aac -b:a 128k output.mp4
+
 
 # Cleanup
 rm -f temp_video.mp4 temp_audio.aac
