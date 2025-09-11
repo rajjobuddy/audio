@@ -51,7 +51,7 @@ jobs:
             echo "MAKE_VIDEO_SCRIPT=make_video" >> $GITHUB_OUTPUT
           elif [[ "$BRANCH_NAME" == *-08 ]]; then
             echo "duration=28800" >> $GITHUB_OUTPUT
-            echo "MAKE_VIDEO_SCRIPT=make_video" >> $GITHUB_OUTPUT            
+            echo "MAKE_VIDEO_SCRIPT=make_video_play" >> $GITHUB_OUTPUT            
           elif [[ "$BRANCH_NAME" == *-live ]]; then
             echo "duration=14400" >> $GITHUB_OUTPUT
           else
