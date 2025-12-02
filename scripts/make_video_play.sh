@@ -27,8 +27,9 @@ ffmpeg -y -stream_loop -1 -i "$AUDIO" -t $DURATION \
   -af "afade=t=in:st=0:d=3,afade=t=out:st=$(($DURATION - 3)):d=3" \
   -c:a aac -b:a 192k temp_audio.aac
 
-echo "🎬 Merging video and audio..."
+echo "🎬 Merging video and audio (replacing video audio)..."
 ffmpeg -y -i temp_video.mp4 -i temp_audio.aac \
+  -map 0:v:0 -map 1:a:0 \
   -c:v copy -c:a copy -shortest -movflags +faststart "$OUTPUT"
 
 # Cleanup
