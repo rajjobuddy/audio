@@ -22,14 +22,14 @@ from moviepy import AudioFileClip, ImageClip, concatenate_videoclips
 SERVICE_ACCOUNT_KEY = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
 LOCATION = os.environ.get("LOCATION", "us-central1")
 
-MP3_FILE = os.environ.get("MP3_FILE")  # workflow sets this (c2c/input/*.mp3 or *.mpeg)
+MP3_FILE = os.environ.get("MP3_FILE")  # workflow sets this (tiw/input/*.mp3 or *.mpeg)
 
 IMAGE_DURATION = float(os.environ.get("IMAGE_DURATION", "5"))
 ASPECT_RATIO = os.environ.get("ASPECT_RATIO", "9:16")
 
 CHANNEL_NAME = os.environ.get("CHANNEL_NAME", "Cloud to Capital")
 
-OUTPUT_DIR = os.environ.get("OUTPUT_DIR", "c2c/output")
+OUTPUT_DIR = os.environ.get("OUTPUT_DIR", "tiw/output")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
