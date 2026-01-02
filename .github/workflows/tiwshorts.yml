@@ -1,0 +1,83 @@
+name: TIW Shorts
+
+on:
+  create:
+  workflow_dispatch:
+
+jobs:
+  build:
+    if: ${{ github.event.ref_type == 'branch' && endsWith(github.event.ref, '-s') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: tiw/requirements.txt
+
+      - name: Auth to Google Cloud (service account JSON)
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: System dependencies (ffmpeg + fonts)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r tiw/requirements.txt
+
+      - name: Pick audio from tiw/input/
+        shell: bash
+        run: |
+          AUDIO_FILE="$(find tiw/input -maxdepth 1 -type f \( -iname "*.mp3" -o -iname "*.mpeg" -o -iname "*.m4a" \) | sort | head -n 1)"
+          if [ -z "$AUDIO_FILE" ]; then
+            echo "No .mp3 or .mpeg found in tiw/input/"
+            exit 1
+          fi
+          echo "MP3_FILE=$AUDIO_FILE" >> "$GITHUB_ENV"
+          echo "Using audio: $AUDIO_FILE"
+
+      - name: Speed up audio 1.25x (ffmpeg)
+        shell: bash
+        run: |
+          set -euo pipefail
+          IN_FILE="${MP3_FILE}"
+          mkdir -p tiw/tmp
+          BASENAME="$(basename "$IN_FILE")"
+          NAME="${BASENAME%.*}"
+          OUT_FILE="tiw/tmp/${NAME}_1.25x.mp3"
+          #ffmpeg -y -i "$IN_FILE" -filter:a "atempo=1.25" -vn "$OUT_FILE"
+          ffmpeg -y -i "$IN_FILE" -filter:a "atempo=1.25" -vn -c:a libmp3lame -q:a 2 "$OUT_FILE"
+          echo "MP3_FILE=$OUT_FILE" >> "$GITHUB_ENV"
+          
+      - name: Run generator
+        env:
+          LOCATION: us-central1
+        run: |
+          python tiw/generate_shorts.py
+
+      - name: Set run timestamp
+        shell: bash
+        run: echo "RUN_TS=$(date +'%Y%m%d_%H%M%S')" >> "$GITHUB_ENV"
+      
+      - name: Upload outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: youtube-shorts-output-${{ env.RUN_TS }}-run${{ github.run_id }}
+          if-no-files-found: error
+          path: |
+            tiw/output/youtube_shorts_*.mp4
+            tiw/output/youtube_metadata_*.json
