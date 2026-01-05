@@ -90,8 +90,8 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
       
-          git clone https://x-access-token:${GH_TOKEN}@github.com/rajjobuddy/tiw.git
-          cd tiw
+          git clone https://x-access-token:${GH_TOKEN}@github.com/rajjobuddy/tiw_yt.git
+          cd tiw_yt
       
           echo "Run ID: ${RUN_ID}" >> input-trigger.txt
       
