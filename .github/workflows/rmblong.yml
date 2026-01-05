@@ -1,4 +1,4 @@
-name: Run the workflow
+name: RMB Long
 
 on:
   push:
