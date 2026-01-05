@@ -55,7 +55,8 @@ jobs:
           elif [[ "$BRANCH_NAME" == *-live ]]; then
             echo "duration=14400" >> $GITHUB_OUTPUT
           else
-            echo "duration=0" >> $GITHUB_OUTPUT
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "Skipping workflow for branch: $BRANCH_NAME"
           fi
 
       - name: Install dependencies
