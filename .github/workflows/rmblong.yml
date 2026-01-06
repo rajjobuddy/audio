@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - 'assets/*.mp4'
-      - 'assets/*.jpeg'
+      - 'assets/*.jpg'
       - 'assets/*.wav'
   workflow_dispatch:
 
@@ -29,8 +29,8 @@ jobs:
           filters: |
             mp4:
               - 'assets/*.mp4'
-            jpeg:
-              - 'assets/*.jpeg'
+            jpg:
+              - 'assets/*.jpg'
             wav:
               - 'assets/*.wav'
 
@@ -45,17 +45,17 @@ jobs:
           echo "Actor: ${{ github.actor }}"
           echo "Repo owner: ${{ github.repository_owner }}"
           echo "Changed mp4:  ${{ steps.changed.outputs.mp4 }}"
-          echo "Changed jpeg: ${{ steps.changed.outputs.jpeg }}"
+          echo "Changed jpg: ${{ steps.changed.outputs.jpg }}"
           echo "Changed wav:  ${{ steps.changed.outputs.wav }}"
 
           # If multiple types change in one push, choose a priority order:
-          # mp4 > jpeg > wav (change this if you want different precedence).
+          # mp4 > jpg > wav (change this if you want different precedence).
           if [[ "${{ steps.changed.outputs.mp4 }}" == "true" ]]; then
             echo "should_run=true" >> "$GITHUB_OUTPUT"
             echo "duration=3600" >> "$GITHUB_OUTPUT"
             echo "MAKE_VIDEO_SCRIPT=make_video_play" >> "$GITHUB_OUTPUT"
 
-          elif [[ "${{ steps.changed.outputs.jpeg }}" == "true" ]]; then
+          elif [[ "${{ steps.changed.outputs.jpg }}" == "true" ]]; then
             echo "should_run=true" >> "$GITHUB_OUTPUT"
             echo "duration=14400" >> "$GITHUB_OUTPUT"
             echo "MAKE_VIDEO_SCRIPT=make_video" >> "$GITHUB_OUTPUT"
