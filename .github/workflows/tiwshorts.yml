@@ -7,7 +7,6 @@ on:
       - 'tiw/input/**/*.wav'
       - 'tiw/input/**/*.m4a'    
       - 'tiw/input/**/*.mpeg'  
-  create:
   workflow_dispatch:
 
 jobs:
