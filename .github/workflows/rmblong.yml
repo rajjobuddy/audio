@@ -4,28 +4,71 @@ on:
   push:
     branches:
       - '**'
+    paths:
+      - 'assets/*.mp4'
+      - 'assets/*.jpeg'
+      - 'assets/*.wav'
+  workflow_dispatch:
 
 jobs:
   check-conditions:
     runs-on: ubuntu-latest
     outputs:
-      should_run: ${{ steps.should_run.outputs.result }}
+      should_run: ${{ steps.params.outputs.should_run }}
+      duration: ${{ steps.params.outputs.duration }}
+      MAKE_VIDEO_SCRIPT: ${{ steps.params.outputs.MAKE_VIDEO_SCRIPT }}
+
     steps:
       - name: ⬇️ Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: ✅ Check if actor is repo owner and commit message matches
-        id: should_run
+      - name: Detect changed asset types
+        id: changed
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            mp4:
+              - 'assets/*.mp4'
+            jpeg:
+              - 'assets/*.jpeg'
+            wav:
+              - 'assets/*.wav'
+
+      - name: ✅ Check actor/commit + set params from file type
+        id: params
+        shell: bash
         run: |
-          echo "result=false" >> $GITHUB_OUTPUT  # Default to false
+          # defaults
+          echo "should_run=false" >> "$GITHUB_OUTPUT"
+          echo "duration=" >> "$GITHUB_OUTPUT"
+          echo "MAKE_VIDEO_SCRIPT=" >> "$GITHUB_OUTPUT"
 
-          COMMIT_MSG=$(git log -1 --pretty=%B)
+          COMMIT_MSG="$(git log -1 --pretty=%B)"
           echo "Commit message: $COMMIT_MSG"
           echo "Actor: ${{ github.actor }}"
           echo "Repo owner: ${{ github.repository_owner }}"
+          echo "Changed mp4:  ${{ steps.changed.outputs.mp4 }}"
+          echo "Changed jpeg: ${{ steps.changed.outputs.jpeg }}"
+          echo "Changed wav:  ${{ steps.changed.outputs.wav }}"
 
-          if [[ "${{ github.actor }}" == "${{ github.repository_owner }}" && "$COMMIT_MSG" == Add\ files\ via\ upload* ]]; then
-            echo "result=true" >> $GITHUB_OUTPUT
+          # If multiple types change in one push, choose a priority order:
+          # mp4 > jpeg > wav (change this if you want different precedence).
+          if [[ "${{ steps.changed.outputs.mp4 }}" == "true" ]]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            echo "duration=3600" >> "$GITHUB_OUTPUT"
+            echo "MAKE_VIDEO_SCRIPT=make_video_play" >> "$GITHUB_OUTPUT"
+
+          elif [[ "${{ steps.changed.outputs.jpeg }}" == "true" ]]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            echo "duration=14400" >> "$GITHUB_OUTPUT"
+            echo "MAKE_VIDEO_SCRIPT=make_video" >> "$GITHUB_OUTPUT"
+
+          elif [[ "${{ steps.changed.outputs.wav }}" == "true" ]]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            echo "duration=14400" >> "$GITHUB_OUTPUT"
+            echo "MAKE_VIDEO_SCRIPT=make_video_play" >> "$GITHUB_OUTPUT"
           fi
 
   build-video:
@@ -35,29 +78,7 @@ jobs:
 
     steps:
       - name: ⬇️ Checkout code
-        uses: actions/checkout@v3
-
-      - name: 🔍 Extract duration based on branch name
-        id: duration
-        run: |
-          BRANCH_NAME="${GITHUB_REF##*/}"
-          echo "Branch name: $BRANCH_NAME"
-
-          if [[ "$BRANCH_NAME" == *-01 ]]; then
-            echo "duration=3600" >> $GITHUB_OUTPUT
-            echo "MAKE_VIDEO_SCRIPT=make_video_play" >> $GITHUB_OUTPUT
-          elif [[ "$BRANCH_NAME" == *-04 ]]; then
-            echo "duration=14400" >> $GITHUB_OUTPUT
-            echo "MAKE_VIDEO_SCRIPT=make_video" >> $GITHUB_OUTPUT
-          elif [[ "$BRANCH_NAME" == *-08 ]]; then
-            echo "duration=28800" >> $GITHUB_OUTPUT
-            echo "MAKE_VIDEO_SCRIPT=make_video_play" >> $GITHUB_OUTPUT            
-          elif [[ "$BRANCH_NAME" == *-live ]]; then
-            echo "duration=14400" >> $GITHUB_OUTPUT
-          else
-            echo "should_run=false" >> $GITHUB_OUTPUT
-            echo "Skipping workflow for branch: $BRANCH_NAME"
-          fi
+        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: pip install google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
@@ -68,7 +89,7 @@ jobs:
           sudo apt install -y ffmpeg
 
       - name: 🛠️ Run Bash video script
-        run: bash scripts/${{ steps.duration.outputs.MAKE_VIDEO_SCRIPT }}.sh "${{ steps.duration.outputs.duration }}"
+        run: bash scripts/${{ needs.check-conditions.outputs.MAKE_VIDEO_SCRIPT }}.sh "${{ needs.check-conditions.outputs.duration }}"
 
       - name: 📦 Upload final video as artifact
         uses: actions/upload-artifact@v4
@@ -83,12 +104,12 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-      
+
           git clone https://x-access-token:${GH_TOKEN}@github.com/rajjobuddy/rmb.git
           cd rmb
-      
+
           echo "Run ID: ${RUN_ID}" >> input-trigger.txt
-      
+
           git add input-trigger.txt
           git commit -m "Update input-trigger.txt with run ID ${RUN_ID}"
-          git push   
+          git push
