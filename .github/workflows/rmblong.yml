@@ -44,9 +44,6 @@ jobs:
           echo "should_run=false" >> "$GITHUB_OUTPUT"
           echo "duration=" >> "$GITHUB_OUTPUT"
           echo "MAKE_VIDEO_SCRIPT=" >> "$GITHUB_OUTPUT"
-
-          COMMIT_MSG="$(git log -1 --pretty=%B)"
-          echo "Commit message: $COMMIT_MSG"
           echo "Actor: ${{ github.actor }}"
           echo "Repo owner: ${{ github.repository_owner }}"
           echo "Changed mp4:  ${{ steps.changed.outputs.mp4 }}"
