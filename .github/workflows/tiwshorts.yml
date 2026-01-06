@@ -1,12 +1,17 @@
 name: TIW Shorts
 
 on:
+  push:
+    paths:
+      - 'tiw/input/**/*.mp3'
+      - 'tiw/input/**/*.wav'
+      - 'tiw/input/**/*.m4a'    
+      - 'tiw/input/**/*.mpeg'  
   create:
   workflow_dispatch:
 
 jobs:
   build:
-    if: ${{ github.event.ref_type == 'branch' && endsWith(github.event.ref, '-s') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
