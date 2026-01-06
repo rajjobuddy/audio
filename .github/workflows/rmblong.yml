@@ -2,8 +2,6 @@ name: RMB Long
 
 on:
   push:
-    branches:
-      - '**'
     paths:
       - 'assets/*.mp4'
       - 'assets/*.jpeg'
