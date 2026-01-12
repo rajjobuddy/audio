@@ -321,7 +321,7 @@ You are an expert YouTube SEO copywriter.
 
 Channel: {channel_name}
 Content type: YouTube Shorts
-Topic: finance / investing / money (use transcript to infer exact topic)
+Topic: finance / investing / Tech/ AI / USMarket/ money (use transcript to infer exact topic)
 
 Transcript:
 {transcript}
