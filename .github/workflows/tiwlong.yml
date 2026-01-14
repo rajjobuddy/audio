@@ -46,7 +46,7 @@ jobs:
       - name: Pick audio from tiw/input/
         shell: bash
         run: |
-          AUDIO_FILE="$(find tiw/input -maxdepth 1 -type f \( -iname "*.mp3" -o -iname "*.wav" -o -iname "*.m4a" \) | sort | head -n 1)"
+          AUDIO_FILE="$(find tiw -maxdepth 1 -type f \( -iname "*.mp3" -o -iname "*.wav" -o -iname "*.m4a" \) | sort | head -n 1)"
           if [ -z "$AUDIO_FILE" ]; then
             echo "No .mp3 or .mpeg found in tiw/input/"
             exit 1
