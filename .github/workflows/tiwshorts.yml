@@ -54,7 +54,7 @@ jobs:
           echo "MP3_FILE=$AUDIO_FILE" >> "$GITHUB_ENV"
           echo "Using audio: $AUDIO_FILE"
 
-      - name: Speed up audio 1.25x (ffmpeg)
+      - name: Speed up audio 1.15x (ffmpeg)
         shell: bash
         run: |
           set -euo pipefail
@@ -63,8 +63,8 @@ jobs:
           BASENAME="$(basename "$IN_FILE")"
           NAME="${BASENAME%.*}"
           OUT_FILE="tiw/tmp/${NAME}_1.25x.mp3"
-          #ffmpeg -y -i "$IN_FILE" -filter:a "atempo=1.25" -vn "$OUT_FILE"
-          ffmpeg -y -i "$IN_FILE" -filter:a "atempo=1.25" -vn -c:a libmp3lame -q:a 2 "$OUT_FILE"
+          #ffmpeg -y -i "$IN_FILE" -filter:a "atempo=1.15" -vn "$OUT_FILE"
+          ffmpeg -y -i "$IN_FILE" -filter:a "atempo=1.15" -vn -c:a libmp3lame -q:a 2 "$OUT_FILE"
           echo "MP3_FILE=$OUT_FILE" >> "$GITHUB_ENV"
           
       - name: Run generator
